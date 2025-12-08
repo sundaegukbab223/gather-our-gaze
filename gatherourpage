@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>우리의 시선이 모여</title>
+    
+    <link rel="preconnect" href="https://i.imgur.com">
+    
+    <style>
+        /* --- 1. 기본 설정 (Light Mode) --- */
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #ffffff;
+            color: #111;
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            overflow: hidden; user-select: none;
+            font-weight: 300;
+        }
+
+        /* --- 2. 메인 화면 --- */
+        #main-screen {
+            position: absolute; width: 100%; height: 100%;
+            display: block; 
+            overflow: hidden;
+            background-color: #ffffff;
+            transition: opacity 0.8s ease;
+            z-index: 10;
+        }
+
+        /* 배경 레이어 (아카이브 흔적들) */
+        #main-bg-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; 
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            grid-auto-rows: 120px;
+            gap: 10px;
+            padding: 20px; box-sizing: border-box;
+            
+            opacity: 0.08; 
+            transition: opacity 0.5s ease;
+            cursor: pointer; 
+            overflow: hidden;
+        }
+        
+        #main-bg-layer:hover {
+            opacity: 0.2;
+        }
+
+        .bg-trace-item {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%);
+            border-radius: 4px;
+            transition: transform 0.3s;
+        }
+        
+        /* 전경 컨텐츠 래퍼 */
+        .foreground-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; 
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            pointer-events: none; 
+        }
+
+        .title-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 6rem;
+            pointer-events: auto; 
+        }
+
+        .main-title {
+            font-size: 2rem; font-weight: 100; letter-spacing: 0.8rem;
+            margin: 0; opacity: 0.9; color: #000;
+            text-shadow: 0 0 20px rgba(255,255,255,0.8); 
+        }
+
+        .help-btn {
+            position: absolute;
+            top: -10px; right: -50px;
+            background: none; border: 1px solid rgba(0,0,0,0.3);
+            color: rgba(0,0,0,0.6); width: 30px; height: 30px;
+            border-radius: 50%; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 0.9rem; transition: 0.3s; font-weight: 300;
+            animation: floating 3s ease-in-out infinite;
+            background: rgba(255,255,255,0.5); 
+        }
+        .help-btn:hover { border-color: #000; color: #000; }
+
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* --- 뷰파인더 스타일 --- */
+        .shape-container { 
+            display: flex; gap: 4rem; margin-bottom: 6rem;
+            align-items: center;
+            pointer-events: auto; 
+        }
+        
+        .viewfinder-btn {
+            position: relative;
+            width: 160px; height: 160px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform: scale(1);
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));
+        }
+        
+        .viewfinder-btn:hover {
+            transform: scale(1.15); 
+            z-index: 20;
+            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.2));
+        }
+
+        .viewfinder-img {
+            width: 100%; height: 100%;
+            background-color: #333; 
+            background-size: cover;
+            background-position: center;
+            filter: grayscale(100%) brightness(30%);
+            transition: filter 0.3s ease; 
+        }
+
+        /* [수정됨] 마우스 호버 시 흑백(grayscale 100%) 유지하며 밝기만 증가 */
+        .viewfinder-btn:hover .viewfinder-img {
+            filter: grayscale(100%) brightness(100%);
+        }
+
+        .mask-circle {
+            border-radius: 50%;
+            overflow: hidden;
+            background: #fff; 
+        }
+        
+        .mask-triangle {
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+        .mask-triangle .viewfinder-img {
+            transform: scale(1.2) translateY(10%); 
+        }
+
+        .mask-square {
+            border-radius: 4px; 
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .shape-label {
+            position: absolute;
+            bottom: -30px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            opacity: 0;
+            transition: 0.3s;
+            color: #555;
+            font-weight: 500;
+        }
+        .viewfinder-btn:hover .shape-label { opacity: 1; transform: translateY(5px); }
+
+        /* [복구] 셰이프 게임 진행 버튼 스타일 */
+        .archive-link-btn {
+            background: rgba(255, 255, 255, 0.8); 
+            border: 1px solid rgba(0,0,0,0.1);
+            color: #333; 
+            padding: 12px 35px;
+            border-radius: 30px; cursor: pointer; letter-spacing: 2px;
+            transition: 0.3s; font-size: 1rem; font-weight: 400;
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .archive-link-btn:hover { 
+            border-color: #000; color: #000; 
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+        }
+
+        /* 모달 스타일 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8);
+            z-index: 500;
+            display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s ease; backdrop-filter: blur(5px);
+        }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        
+        .modal-content {
+            background: #fff; border: 1px solid #ddd; padding: 40px;
+            border-radius: 20px; max-width: 400px; width: 85%;
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            position: relative; color: #111;
+        }
+        .modal-content h2 { margin-top: 0; font-weight: 300; letter-spacing: 2px; margin-bottom: 30px; color: #000; }
+        .guide-step { margin-bottom: 25px; text-align: left; line-height: 1.6; font-size: 0.95rem; color: #555; font-weight: 300; }
+        .guide-step strong { color: #000; font-weight: 500; display: block; margin-bottom: 5px; font-size: 1.1rem; letter-spacing: 1px; }
+        
+        .close-modal-btn {
+            background: transparent; color: #333; border: 1px solid #ccc; padding: 10px 30px;
+            border-radius: 20px; cursor: pointer; font-weight: 300; margin-top: 20px;
+            transition: 0.3s; letter-spacing: 1px;
+        }
+        .close-modal-btn:hover { border-color: #000; background: rgba(0,0,0,0.05); }
+
+        /* 감상 모드 스타일 */
+        #view-img-container {
+            position: relative;
+            width: 100%;
+            max-height: 60vh;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #view-drawing-layer {
+            position: relative;
+            width: 100%; max-height: 60vh;
+            object-fit: contain;
+            z-index: 2;
+        }
+
+        #view-backdrop-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: contain;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .view-original-btn {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ccc;
+            color: #555;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(2px);
+            z-index: 10;
+        }
+        .view-original-btn:hover {
+            background: #fff;
+            color: #000;
+            border-color: #000;
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .view-original-btn.active {
+            background: #000; color: #fff; border-color: #000;
+        }
+        .view-original-btn svg {
+            width: 22px; height: 22px;
+            stroke: currentColor; stroke-width: 1.5; fill: none;
+        }
+
+        #view-title { font-size: 1.2rem; color: #000; margin-bottom: 5px; letter-spacing: 2px; font-weight: 400; }
+        #view-date { font-size: 0.8rem; color: #888; margin-bottom: 20px; font-weight: 300; }
+
+        /* 토스트 메시지 */
+        #toast-message {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8); color: #fff;
+            padding: 12px 30px; border-radius: 30px; font-size: 0.95rem;
+            font-weight: 500; letter-spacing: 1px;
+            z-index: 1000; pointer-events: none;
+            opacity: 0; transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        #toast-message.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+
+        /* --- 3. 갤러리 화면 --- */
+        #gallery-screen {
+            position: absolute; width: 100%; height: 100%;
+            opacity: 0; pointer-events: none;
+            transition: opacity 1s ease; z-index: 5;
+            background: #ffffff;
+        }
+        #gallery-screen.active { opacity: 1; pointer-events: all; }
+
+        .photo-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: contain; opacity: 0;
+            transition: opacity 1.5s ease-in-out; 
+            cursor: pointer;
+        }
+        .photo-layer.visible { opacity: 1; z-index: 1; }
+
+        .nav-btn {
+            position: absolute; top: 30px; left: 30px; z-index: 100;
+            color: #333; border: none; background: none; 
+            font-size: 0.9rem; letter-spacing: 1px; font-weight: 400;
+            cursor: pointer; opacity: 0.7;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .nav-btn:hover { opacity: 1; color: #000; }
+
+        .speed-control {
+            position: absolute; top: 30px; right: 30px; z-index: 100;
+            display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+            opacity: 0.7; transition: opacity 0.3s;
+        }
+        .speed-control:hover { opacity: 1; }
+        .speed-label { font-size: 0.75rem; letter-spacing: 1px; color: #888; font-weight: 400; }
+        #speed-slider {
+            width: 120px; height: 4px; background: #ddd; 
+            outline: none; -webkit-appearance: none; border-radius: 2px;
+        }
+        #speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 12px; height: 12px; background: #333; border-radius: 50%; cursor: pointer;
+        }
+
+        .click-guide {
+            position: absolute; bottom: 5%; width: 100%; text-align: center;
+            color: rgba(0,0,0,0.4); font-size: 0.8rem; letter-spacing: 2px;
+            z-index: 20; pointer-events: none; font-weight: 400;
+            animation: blink 3s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.2; } }
+
+        /* --- 4. 드로잉 화면 --- */
+        #drawing-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fff; z-index: 200; display: none; opacity: 0; transition: opacity 0.5s ease;
+        }
+        #drawing-screen.show { display: block; opacity: 1; }
+        #drawing-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
+        #drawing-canvas { position: absolute; top: 0; left: 0; cursor: crosshair; }
+
+        .toolbar {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,0.1); padding: 12px 30px; border-radius: 60px;
+            display: flex; align-items: center; gap: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        
+        #title-container-wrapper { display: flex; align-items: center; gap: 20px; }
+
+        #drawing-title {
+            background: transparent; border: none; border-bottom: 1px solid #ccc;
+            color: #111; font-family: 'Pretendard', sans-serif; font-size: 1rem; font-weight: 300;
+            width: 140px; text-align: center; padding: 5px; outline: none; transition: 0.3s;
+        }
+        #drawing-title:focus { border-color: #000; }
+        #drawing-title::placeholder { color: #999; font-size: 0.8rem; }
+
+        .tool-group { display: flex; align-items: center; gap: 15px; }
+        .tool-btn {
+            background: none; border: none; color: #999; cursor: pointer; transition: 0.2s; padding: 5px; display: flex; justify-content: center; align-items: center;
+        }
+        .tool-btn svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        .tool-btn:hover { color: #000; transform: translateY(-2px); }
+        .tool-btn.active { color: #000; }
+        .tool-btn.active svg { stroke-width: 3; }
+        .divider { width: 1px; height: 24px; background: #ddd; margin: 0 5px; }
+        
+        input[type="color"] { width: 28px; height: 28px; border: none; border-radius: 50%; cursor: pointer; background: none; padding: 0; -webkit-appearance: none; }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 1px solid #ccc; border-radius: 50%; }
+        input[type="range"] { width: 80px; height: 2px; background: #ddd; cursor: pointer; appearance: none; }
+        input[type="range"]::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; background: #333; border-radius: 50%; }
+        
+        .close-draw-btn {
+            position: absolute; top: 30px; right: 30px; background: none; border: none; color: #333; cursor: pointer; opacity: 0.6; transition: 0.3s;
+        }
+        .close-draw-btn:hover { opacity: 1; transform: rotate(90deg); }
+        .close-draw-btn svg { width: 32px; height: 32px; stroke: currentColor; stroke-width: 1.5; }
+
+        /* --- 5. 아카이브 화면 --- */
+        #archive-screen {
+            position: absolute; width: 100%; height: 100%;
+            background: #fff; z-index: 300;
+            display: none; flex-direction: column;
+            padding: 80px 40px; box-sizing: border-box;
+            overflow-y: auto;
+        }
+        #archive-screen.active { display: flex; }
+
+        .archive-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 40px; border-bottom: 1px solid #eee; padding-bottom: 20px;
+        }
+        .archive-title { font-size: 1.5rem; font-weight: 500; letter-spacing: 2px; color: #000; }
+
+        .random-game-btn {
+            background: transparent; color: #333; border: 1px solid #ccc;
+            padding: 10px 25px; border-radius: 30px;
+            font-weight: 400; cursor: pointer; margin-right: auto; margin-left: 30px;
+            transition: 0.3s; letter-spacing: 1px; font-family: 'Pretendard', sans-serif;
+        }
+        .random-game-btn:hover { border-color: #000; background: rgba(0,0,0,0.05); }
+        
+        .archive-loading {
+            color: #888; text-align: center; margin-top: 50px; font-size: 0.9rem;
+            animation: blink 2s infinite; font-weight: 300;
+        }
+
+        #archive-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 25px; width: 100%; padding-bottom: 50px;
+        }
+
+        .archive-item {
+            width: 100%;
+            background: #fff; border: 1px solid #eee;
+            border-radius: 8px; overflow: hidden; position: relative;
+            transition: 0.3s; cursor: pointer;
+            display: flex; flex-direction: column;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+        .archive-item:hover { border-color: #333; transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        
+        .archive-item.playable { border-color: #00b894; background: #f0fdf4; border-width: 1.5px; }
+        .archive-item.playable:hover { border-color: #00b894; box-shadow: 0 0 15px rgba(0, 184, 148, 0.3); transform: scale(1.02); }
+        .archive-item.playable .archive-item-title { color: #00b894; font-weight: 600; background: #e6fffa; }
+
+        .archive-img-wrapper {
+            width: 100%; aspect-ratio: 16/9;
+            background: radial-gradient(circle, #f0f0f0 0%, #e0e0e0 100%);
+            overflow: hidden;
+        }
+        .archive-img {
+            width: 100%; height: 100%; object-fit: contain;
+        }
+        .archive-item-title {
+            padding: 12px 10px; text-align: center; font-size: 0.85rem;
+            color: #666; letter-spacing: 1px; background: #fff; font-weight: 400;
+            border-top: 1px solid #eee; transition: 0.3s;
+        }
+        .archive-item:hover .archive-item-title { color: #000; background: #f9f9f9; }
+
+        .delete-btn {
+            position: absolute; top: 10px; right: 10px;
+            width: 24px; height: 24px;
+            background: rgba(255, 255, 255, 0.8); color: #333;
+            border: 1px solid #ddd; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; opacity: 0; transition: 0.2s; z-index: 10;
+            font-weight: 300; font-size: 1.2rem; line-height: 1;
+        }
+        .archive-item:hover .delete-btn { opacity: 1; }
+        .delete-btn:hover { background: red; border-color: red; color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="toast-message">저장 완료</div>
+
+    <div id="main-screen">
+        <div id="main-bg-layer" onclick="openArchive()" title="클릭하여 셰이프 게임 진행"></div>
+
+        <div class="foreground-wrapper">
+            <div class="title-container">
+                <h1 class="main-title">우리의 시선이 모여</h1>
+                <button class="help-btn" onclick="openHelp()" title="사용 방법">?</button>
+            </div>
+            
+            <div class="shape-container">
+                <div class="viewfinder-btn mask-circle" id="vf-circle" onclick="openGallery('circle'); event.stopPropagation();">
+                    <div class="viewfinder-img" id="img-circle"></div>
+                    <div class="shape-label">CIRCLE</div>
+                </div>
+                <div class="viewfinder-btn mask-triangle" id="vf-triangle" onclick="openGallery('triangle'); event.stopPropagation();">
+                    <div class="viewfinder-img" id="img-triangle"></div>
+                    <div class="shape-label">TRIANGLE</div>
+                </div>
+                <div class="viewfinder-btn mask-square" id="vf-square" onclick="openGallery('square'); event.stopPropagation();">
+                    <div class="viewfinder-img" id="img-square"></div>
+                    <div class="shape-label">SQUARE</div>
+                </div>
+            </div>
+            
+            <button class="archive-link-btn" onclick="openArchive()">셰이프 게임 진행</button>
+        </div>
+    </div>
+
+    <div id="help-modal" class="modal-overlay" onclick="closeHelp()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>사용 방법</h2>
+            <div class="guide-step">
+                <strong>1. 관찰하고 그리기 (추출 진행)</strong>
+                도형을 클릭하면 사진들이 크게 펼쳐집니다.<br>
+                <strong>클릭</strong>하면 그 순간의 사진을 포착하여 그릴 수 있습니다.
+            </div>
+            <div class="guide-step">
+                <strong>2. 셰이프 게임 진행</strong>
+                <strong>'셰이프 게임 진행' 버튼</strong>을 누르면 다른 사람들의 흔적이 모여있습니다.<br>
+                녹색 테두리 작품을 골라 이어 그려보세요.
+            </div>
+            <div class="guide-step">
+                <strong>3. 감상하기</strong>
+                완성된 작품을 감상하고,<br>
+                원본 사진과 겹쳐보며 비교할 수 있습니다.
+            </div>
+            <button class="close-modal-btn" onclick="closeHelp()">닫기</button>
+        </div>
+    </div>
+
+    <div id="view-modal" class="modal-overlay" onclick="closeView()">
+        <div class="modal-content" style="max-width: 600px; width: 90%;" onclick="event.stopPropagation()">
+            <div id="view-img-container">
+                <img id="view-backdrop-layer" src="" alt="Background">
+                <img id="view-drawing-layer" src="" alt="Artwork">
+                <button id="view-original-btn" class="view-original-btn" title="원본 겹쳐보기" style="display: none;">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                </button>
+            </div>
+            <div id="view-title"></div>
+            <div id="view-date"></div>
+            <button class="close-modal-btn" onclick="closeView()">닫기</button>
+        </div>
+    </div>
+
+    <div id="gallery-screen">
+        <button class="nav-btn" onclick="goMain()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            BACK
+        </button>
+        <div class="speed-control">
+            <span class="speed-label">SPEED</span>
+            <input type="range" id="speed-slider" min="0" max="9000" value="7500" step="100">
+        </div>
+        <div id="photo-container"></div>
+        <div class="click-guide" id="guide-text">이미지를 클릭하여 추출 진행</div>
+    </div>
+
+    <div id="drawing-screen">
+        <img id="drawing-bg" src="" alt="Background" crossorigin="anonymous">
+        <canvas id="drawing-canvas"></canvas>
+        <button class="close-draw-btn" onclick="closeDrawing()">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <div class="toolbar">
+            <div id="title-container-wrapper">
+                <input type="text" id="drawing-title" placeholder="제목 입력" maxlength="10">
+                <div class="divider"></div>
+            </div>
+            
+            <input type="color" id="color-picker" value="#000000">
+            <div class="divider"></div>
+            <div class="tool-group">
+                <button class="tool-btn active" id="btn-brush" onclick="setTool('brush')" title="Brush">
+                    <svg viewBox="0 0 24 24"><path d="M18 13.2855L9.33579 21.9497L2.26477 14.8787L10.929 6.21447L18 13.2855ZM18 13.2855L20.8284 10.4571C21.6095 9.67606 21.6095 8.40973 20.8284 7.62868L16.5858 3.38604C15.8047 2.605 14.5384 2.60499 13.7574 3.38604L10.929 6.21447M9.33579 21.9497L4.04294 22.9211C3.20436 23.075 2.43796 22.3086 2.59184 21.47L3.56325 16.1772"></path></svg>
+                </button>
+                <button class="tool-btn" id="btn-eraser" onclick="setTool('eraser')" title="Eraser">
+                    <svg viewBox="0 0 24 24"><path d="M2.26489 14.8787L9.33596 21.9497L13.5786 17.7071M2.26489 14.8787L12.1644 4.97918C12.9454 4.19814 14.2118 4.19814 14.9928 4.97918L19.2354 9.22183C20.0165 10.0029 20.0165 11.2692 19.2354 12.0503L10.7501 20.5355L9.33596 21.9497M2.26489 14.8787L4.50011 12.6435"></path></svg>
+                </button>
+            </div>
+            <div class="divider"></div>
+            <div class="tool-group">
+                <input type="range" id="brush-size" min="1" max="20" value="2" title="Size">
+            </div>
+            <div class="divider"></div>
+            <div class="tool-group">
+                <button class="tool-btn" onclick="undo()" title="Undo">
+                    <svg viewBox="0 0 24 24"><path d="M3 10H14C17.3137 10 20 12.6863 20 16V18M3 10L9 4M3 10L9 16"></path></svg>
+                </button>
+                <button class="tool-btn" onclick="saveAndArchive()" title="Save & Share">
+                    <svg viewBox="0 0 24 24"><path d="M19 21H5C3.89543 21 3 20.1046 3 19V5C3 3.89543 3.89543 3 5 3H16L21 8V19C21 20.1046 20.1046 21 19 21ZM17 21V13H7V21M7 3V8H15V3"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="archive-screen">
+        <div class="archive-header">
+            <div class="archive-title">셰이프 게임 진행</div>
+            <button class="random-game-btn" onclick="startRandomGame()">시선 담기</button>
+            <button class="nav-btn" style="position: static;" onclick="closeArchive()">CLOSE</button>
+        </div>
+        <div id="archive-grid">
+            <div class="archive-loading">데이터를 불러오는 중입니다...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAPVMpQPVG0hQHuCPv24S0EFcXUrUBzESk",
+            authDomain: "gather-our-gaze.firebaseapp.com",
+            projectId: "gather-our-gaze",
+            storageBucket: "gather-our-gaze.firebasestorage.app",
+            messagingSenderId: "300093925056",
+            appId: "1:300093925056:web:daa4b4fbd349ce5171ef25",
+            measurementId: "G-LZ7N5SXKW8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        window.db = db;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.getDocs = getDocs;
+        window.deleteDoc = deleteDoc;
+        window.doc = doc;
+        window.query = query;
+        window.orderBy = orderBy;
+        window.limit = limit;
+
+        const imgData = {
+            circle: ["https://i.imgur.com/ulQvHMxl.jpeg", "https://i.imgur.com/iNh66S7l.jpeg", "https://i.imgur.com/bKsAIpkl.jpeg", "https://i.imgur.com/K8DLPBXl.jpeg", "https://i.imgur.com/UTIUT2Vl.jpeg", "https://i.imgur.com/dC8Znbll.jpeg", "https://i.imgur.com/KpSs1WEl.jpeg", "https://i.imgur.com/93knCfjl.jpeg", "https://i.imgur.com/5RNCDdQl.jpeg", "https://i.imgur.com/k43Hk3bl.jpeg", "https://i.imgur.com/BHz1STIl.jpeg", "https://i.imgur.com/AVUYUnMl.jpeg", "https://i.imgur.com/ZEkg4R9l.jpeg", "https://i.imgur.com/yrkJ4Ggl.jpeg", "https://i.imgur.com/VKqDX4Pl.jpeg", "https://i.imgur.com/unMG3V1l.jpeg", "https://i.imgur.com/mtFDsCBl.jpeg", "https://i.imgur.com/FxjUw2bl.jpeg", "https://i.imgur.com/OIthVhUl.jpeg", "https://i.imgur.com/S0jwpzzl.jpeg", "https://i.imgur.com/IyhJY7El.jpeg", "https://i.imgur.com/N0CBV56l.jpeg", "https://i.imgur.com/RWoA0UUl.jpeg", "https://i.imgur.com/AvUdmpGl.jpeg", "https://i.imgur.com/mBHaJ6Yl.jpeg", "https://i.imgur.com/MZcWfoYl.jpeg", "https://i.imgur.com/fBzLie8l.jpeg", "https://i.imgur.com/JDUqAaMl.jpeg", "https://i.imgur.com/pQXRXfkl.jpeg", "https://i.imgur.com/6WJVt5Pl.jpeg", "https://i.imgur.com/1neUp3bl.jpeg", "https://i.imgur.com/lXDEXQQl.jpeg", "https://i.imgur.com/1gABPnsl.jpeg", "https://i.imgur.com/KdUP4esl.jpeg", "https://i.imgur.com/IvcHDk1l.jpeg", "https://i.imgur.com/lZotNcrl.jpeg", "https://i.imgur.com/0aw7pSrl.jpeg"],
+            triangle: ["https://i.imgur.com/7N6epV3l.jpeg", "https://i.imgur.com/YB4ynpcl.jpeg", "https://i.imgur.com/eOTCX0Hl.jpeg", "https://i.imgur.com/b2iovY2l.jpeg", "https://i.imgur.com/XfaRsaBl.jpeg", "https://i.imgur.com/q7tN2uUl.jpeg", "https://i.imgur.com/rqiPUFyl.jpeg", "https://i.imgur.com/0UFPvvQl.jpeg", "https://i.imgur.com/4Cw82o3l.jpeg", "https://i.imgur.com/SzBhx01l.jpeg", "https://i.imgur.com/JscCZyYl.jpeg", "https://i.imgur.com/dQYRG4Ll.jpeg", "https://i.imgur.com/wBHrwlNl.jpeg", "https://i.imgur.com/xCEUE3ol.jpeg", "https://i.imgur.com/Ks8FjYYl.jpeg", "https://i.imgur.com/faCvh9Jl.jpeg", "https://i.imgur.com/XP2gxr0l.jpeg", "https://i.imgur.com/3lHwRFfl.jpeg", "https://i.imgur.com/8aJE6uil.jpeg", "https://i.imgur.com/JytjHYBl.jpeg", "https://i.imgur.com/rpvfiJQl.jpeg", "https://i.imgur.com/yWHjXQ0l.jpeg", "https://i.imgur.com/uJKD4Nrl.jpeg", "https://i.imgur.com/075lrzUl.jpeg", "https://i.imgur.com/ww4IYZol.jpeg", "https://i.imgur.com/9ICTMJcl.jpeg", "https://i.imgur.com/FzuGDU5l.jpeg", "https://i.imgur.com/f38Zzvsl.jpeg", "https://i.imgur.com/Suq7wItl.jpeg", "https://i.imgur.com/A97Omdsl.jpeg", "https://i.imgur.com/SMHfSzil.jpeg", "https://i.imgur.com/Ty8JK8pl.jpeg", "https://i.imgur.com/OFG5dJQl.jpeg", "https://i.imgur.com/X2d7BvJl.jpeg", "https://i.imgur.com/csVcPNPl.jpeg", "https://i.imgur.com/Wh62D5Ql.jpeg", "https://i.imgur.com/ltw83bQl.jpeg", "https://i.imgur.com/sUHvr7zl.jpeg", "https://i.imgur.com/dUzpCF2l.jpeg", "https://i.imgur.com/mf4wbUnl.jpeg", "https://i.imgur.com/U6C1pAOl.jpeg", "https://i.imgur.com/08UiKwHl.jpeg", "https://i.imgur.com/94cH9iZl.jpeg", "https://i.imgur.com/uZ7qdE1l.jpeg", "https://i.imgur.com/TdAUg5Kl.jpeg", "https://i.imgur.com/zMjLwJSl.jpeg", "https://i.imgur.com/a2KlITQl.jpeg", "https://i.imgur.com/LjE6Jm2l.jpeg", "https://i.imgur.com/onAQbctl.jpeg", "https://i.imgur.com/rnZJJJSl.jpeg", "https://i.imgur.com/ublvavol.jpeg", "https://i.imgur.com/eXp3uYsl.jpeg", "https://i.imgur.com/hCutvUUl.jpeg", "https://i.imgur.com/GLLsBpul.jpeg", "https://i.imgur.com/Ix0FVapl.jpeg", "https://i.imgur.com/lvDnUool.jpeg", "https://i.imgur.com/40phuTPl.jpeg", "https://i.imgur.com/9uI6fu2l.jpeg", "https://i.imgur.com/vuEK4Sil.jpeg", "https://i.imgur.com/1RVqpicl.jpeg", "https://i.imgur.com/dCOWyIOl.jpeg", "https://i.imgur.com/v87UGPFl.jpeg", "https://i.imgur.com/VRhPiJjl.jpeg", "https://i.imgur.com/wNQhdLNl.jpeg", "https://i.imgur.com/qaCo0WYl.jpeg", "https://i.imgur.com/KnimqAIl.jpeg", "https://i.imgur.com/bvjkplil.jpeg", "https://i.imgur.com/ulPMwAIl.jpeg", "https://i.imgur.com/fxJdtxvl.jpeg", "https://i.imgur.com/9i0u9cZl.jpeg", "https://i.imgur.com/6RJductl.jpeg", "https://i.imgur.com/RkTq6Edl.jpeg", "https://i.imgur.com/PiBDXaYl.jpeg", "https://i.imgur.com/Gx5R2A0l.jpeg", "https://i.imgur.com/tNNWJbzl.jpeg", "https://i.imgur.com/oqoiUnNl.jpeg", "https://i.imgur.com/PJAj14Cl.jpeg", "https://i.imgur.com/EFLgoA1l.jpeg", "https://i.imgur.com/5ez3yeWl.jpeg", "https://i.imgur.com/NEGL3jWl.jpeg", "https://i.imgur.com/glYq23Il.jpeg", "https://i.imgur.com/zN7Oi8xl.jpeg", "https://i.imgur.com/jElAYYDl.jpeg", "https://i.imgur.com/HtVgn5wl.jpeg", "https://i.imgur.com/PPOijNvl.jpeg", "https://i.imgur.com/PKWWtazl.jpeg", "https://i.imgur.com/4QMaJi1l.jpeg", "https://i.imgur.com/leBp2BFl.jpeg", "https://i.imgur.com/5YKif6ml.jpeg", "https://i.imgur.com/Ycn1j7tl.jpeg", "https://i.imgur.com/EvIinSol.jpeg", "https://i.imgur.com/yA2rtGal.jpeg", "https://i.imgur.com/jqFKcOtl.jpeg", "https://i.imgur.com/T5xDQkFl.jpeg", "https://i.imgur.com/A4Yomckl.jpeg", "https://i.imgur.com/a25Tuy7l.jpeg", "https://i.imgur.com/Mh4EHdCl.jpeg", "https://i.imgur.com/k1MJHbzl.jpeg", "https://i.imgur.com/d1POX4jl.jpeg", "https://i.imgur.com/lnCvljNl.jpeg"],
+            square: ["https://i.imgur.com/7tUzHPTh.jpeg", "https://i.imgur.com/wDbubfeh.jpeg", "https://i.imgur.com/TXXxK4Qh.jpeg", "https://i.imgur.com/gseErJgh.jpeg", "https://i.imgur.com/dVmEjPIh.jpeg", "https://i.imgur.com/ng61990h.jpeg", "https://i.imgur.com/4EoyHYOh.jpeg", "https://i.imgur.com/px6MOcxh.jpeg", "https://i.imgur.com/ZzD23qMh.jpeg", "https://i.imgur.com/VTkcWBGh.jpeg", "https://i.imgur.com/yPljdLXh.jpeg", "https://i.imgur.com/wY6dmihh.jpeg", "https://i.imgur.com/8SIkI1Wh.jpeg", "https://i.imgur.com/JzAVehth.jpeg", "https://i.imgur.com/22WWZ0Ch.jpeg", "https://i.imgur.com/DgCY2yph.jpeg", "https://i.imgur.com/l5PQP9uh.jpeg", "https://i.imgur.com/fYeX5jJh.jpeg", "https://i.imgur.com/quVbFJgh.jpeg", "https://i.imgur.com/xXhOX9Sh.jpeg", "https://i.imgur.com/fnshYtWh.jpeg", "https://i.imgur.com/75G0j6Wh.jpeg", "https://i.imgur.com/nzqwQ5mh.jpeg", "https://i.imgur.com/kzbwrFwh.jpeg", "https://i.imgur.com/m4Fnul5h.jpeg", "https://i.imgur.com/Zf1onBLh.jpeg", "https://i.imgur.com/BN7MXgBh.jpeg", "https://i.imgur.com/TUQWTnOh.jpeg", "https://i.imgur.com/CRhslckh.jpeg", "https://i.imgur.com/ixzOl7mh.jpeg", "https://i.imgur.com/DSRFqvDh.jpeg", "https://i.imgur.com/adS5B1Ah.jpeg", "https://i.imgur.com/CtexPmPh.jpeg", "https://i.imgur.com/bChOhXth.jpeg", "https://i.imgur.com/iB28XRph.jpeg", "https://i.imgur.com/6O1aRpUh.jpeg", "https://i.imgur.com/WOBloDKh.jpeg", "https://i.imgur.com/Lbv5HKEh.jpeg", "https://i.imgur.com/jHilkvEh.jpeg", "https://i.imgur.com/Se2Szcrh.jpeg", "https://i.imgur.com/ckzQ1adh.jpeg", "https://i.imgur.com/FIfGqQ1h.jpeg", "https://i.imgur.com/U8W1tZVh.jpeg", "https://i.imgur.com/sTx91cRh.jpeg", "https://i.imgur.com/OYdFef8h.jpeg", "https://i.imgur.com/etk4yC9h.jpeg", "https://i.imgur.com/nsJbQDKh.jpeg", "https://i.imgur.com/PLcDuASh.jpeg", "https://i.imgur.com/BbPeHsLh.jpeg", "https://i.imgur.com/9SyIqiah.jpeg", "https://i.imgur.com/dWTS5hLh.jpeg", "https://i.imgur.com/NNWT2avh.jpeg", "https://i.imgur.com/SXZqheVh.jpeg", "https://i.imgur.com/G1z0Tb7h.jpeg", "https://i.imgur.com/amYR2M5h.jpeg", "https://i.imgur.com/81gyJF0h.jpeg", "https://i.imgur.com/jWKEZ0Ah.jpeg", "https://i.imgur.com/dOJyBWdh.jpeg", "https://i.imgur.com/0AX11dFh.jpeg", "https://i.imgur.com/lrFlGmWh.jpeg", "https://i.imgur.com/kn1Zwfah.jpeg", "https://i.imgur.com/OEt7h5Th.jpeg", "https://i.imgur.com/FQj8Lwnh.jpeg", "https://i.imgur.com/QFbte9Nh.jpeg", "https://i.imgur.com/QoDNnN3h.jpeg", "https://i.imgur.com/nGJaSfah.jpeg", "https://i.imgur.com/TyaCkJwh.jpeg", "https://i.imgur.com/tB09p8vh.jpeg", "https://i.imgur.com/UG9wvdOh.jpeg", "https://i.imgur.com/PZgmk8Ah.jpeg", "https://i.imgur.com/ALR6xkrh.jpeg", "https://i.imgur.com/OjNGravh.jpeg", "https://i.imgur.com/4Dg6Dhyh.jpeg", "https://i.imgur.com/1WoqqfJh.jpeg", "https://i.imgur.com/DfxCBjfh.jpeg", "https://i.imgur.com/IQUE9qqh.jpeg", "https://i.imgur.com/tOiHIAfh.jpeg", "https://i.imgur.com/TteEKRgh.jpeg", "https://i.imgur.com/Gejgr5lh.jpeg", "https://i.imgur.com/o3pjrzch.jpeg", "https://i.imgur.com/Z1e1Gvmh.jpeg", "https://i.imgur.com/YTxm35ch.jpeg", "https://i.imgur.com/ZHTcBjgh.jpeg", "https://i.imgur.com/jP23xU2h.jpeg", "https://i.imgur.com/uleTGavh.jpeg", "https://i.imgur.com/TCAfo7eh.jpeg", "https://i.imgur.com/cczd9pUh.jpeg", "https://i.imgur.com/Xw5fLe2h.jpeg", "https://i.imgur.com/EwmWBUqh.jpeg", "https://i.imgur.com/GAcV1IVh.jpeg", "https://i.imgur.com/KwR8vCdh.jpeg", "https://i.imgur.com/fUatYvAh.jpeg", "https://i.imgur.com/hBsIncCh.jpeg", "https://i.imgur.com/6nj2m7Ph.jpeg", "https://i.imgur.com/HbG3pLch.jpeg", "https://i.imgur.com/uj7m7PLh.jpeg", "https://i.imgur.com/d4L18DXh.jpeg", "https://i.imgur.com/GeLfHjbh.jpeg", "https://i.imgur.com/m2G3ENlh.jpeg", "https://i.imgur.com/dJ0FYdRh.jpeg"]
+        };
+
+        let galleryInterval;
+        let currentIndex = 0;
+        let currentSpeed = 2500; 
+        let isPaused = false;
+        
+        let currentDrawMode = 'extraction';
+        window.currentRootUrl = "";
+
+        const preloadedCache = {
+            circle: { elements: [], remainingUrls: [] },
+            triangle: { elements: [], remainingUrls: [] },
+            square: { elements: [], remainingUrls: [] }
+        };
+
+        window.shuffleArray = function(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; 
+            }
+            return array;
+        };
+
+        function loadRemainingImagesSequentially(shape) {
+            const urls = preloadedCache[shape].remainingUrls;
+            let index = 0;
+
+            function loadNext() {
+                if (index >= urls.length) return;
+
+                const url = urls[index];
+                const img = new Image();
+                img.src = url;
+                img.crossOrigin = "anonymous";
+                img.decoding = "async";
+                img.className = 'photo-layer';
+                // [복구] 갤러리 이미지 클릭 시 추출 모드로 진입
+                img.onclick = () => window.openDrawing(url, "", 'extraction');
+                
+                img.onload = () => {
+                    const container = document.getElementById('photo-container');
+                    if (document.getElementById('gallery-screen').classList.contains('active')) {
+                        container.appendChild(img);
+                    }
+                    preloadedCache[shape].elements.push(img);
+                    
+                    index++;
+                    loadNext(); 
+                };
+                
+                img.onerror = () => {
+                    index++;
+                    loadNext();
+                };
+            }
+
+            loadNext();
+        }
+
+        function initPreload() {
+            ['circle', 'triangle', 'square'].forEach(shape => {
+                const allUrls = window.shuffleArray([...imgData[shape]]);
+                
+                const firstBatch = allUrls.slice(0, 1);
+                const remaining = allUrls.slice(1);
+                
+                preloadedCache[shape].remainingUrls = remaining;
+
+                firstBatch.forEach(url => {
+                    const img = new Image();
+                    img.src = url;
+                    img.crossOrigin = "anonymous";
+                    img.decoding = "async";
+                    img.className = 'photo-layer';
+                    img.onclick = () => window.openDrawing(url, "", 'extraction');
+                    preloadedCache[shape].elements.push(img);
+                });
+            });
+        }
+
+        initPreload();
+
+        // 뷰파인더 셔플
+        function startShuffle(shape) {
+            const imgEl = document.getElementById(`img-${shape}`);
+            const images = imgData[shape];
+            imgEl.style.backgroundImage = `url(${images[Math.floor(Math.random() * images.length)]})`;
+            
+            window[`shuffle_${shape}`] = setInterval(() => {
+                const randomUrl = images[Math.floor(Math.random() * images.length)];
+                imgEl.style.backgroundImage = `url(${randomUrl})`;
+            }, 150); 
+        }
+
+        function stopShuffle(shape) {
+            if (window[`shuffle_${shape}`]) {
+                clearInterval(window[`shuffle_${shape}`]);
+            }
+        }
+
+        ['circle', 'triangle', 'square'].forEach(shape => {
+            const btn = document.getElementById(`vf-${shape}`);
+            const imgEl = document.getElementById(`img-${shape}`);
+            imgEl.style.backgroundImage = `url(${imgData[shape][Math.floor(Math.random() * imgData[shape].length)]})`;
+
+            btn.addEventListener('mouseenter', () => startShuffle(shape));
+            btn.addEventListener('mouseleave', () => stopShuffle(shape));
+        });
+
+        // 배경에 아카이브 이미지 로드
+        async function loadBackgroundImages() {
+            const bgLayer = document.getElementById('main-bg-layer');
+            try {
+                const q = window.query(window.collection(window.db, "gazes"), window.orderBy("createdAt", "desc"), window.limit(30));
+                const querySnapshot = await window.getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    return;
+                }
+
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const img = document.createElement('img');
+                    img.src = data.imageUrl; // 사람들이 그린 그림
+                    img.className = 'bg-trace-item';
+                    img.loading = "lazy";
+                    bgLayer.appendChild(img);
+                });
+            } catch (e) {
+                console.error("BG Load Error:", e);
+            }
+        }
+        
+        loadBackgroundImages();
+
+        window.openHelp = function() {
+            const modal = document.getElementById('help-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        };
+        window.closeHelp = function() {
+            const modal = document.getElementById('help-modal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        };
+
+        // [복구] 갤러리 열기 함수 정상화
+        window.openGallery = function(shape) {
+            document.getElementById('main-screen').style.opacity = '0';
+            document.getElementById('main-screen').style.pointerEvents = 'none';
+            document.getElementById('gallery-screen').classList.add('active');
+
+            const container = document.getElementById('photo-container');
+            container.innerHTML = '';
+
+            const preloadedImgs = preloadedCache[shape].elements;
+            preloadedImgs.forEach(img => {
+                container.appendChild(img);
+            });
+
+            if(preloadedImgs.length > 0) {
+                currentIndex = 0;
+                preloadedImgs[0].classList.add('visible');
+            }
+
+            window.startSlideShow();
+
+            if (preloadedCache[shape].remainingUrls.length > 0 && preloadedCache[shape].elements.length < 2) {
+                loadRemainingImagesSequentially(shape);
+            }
+        };
+
+        window.startSlideShow = function() {
+            if(galleryInterval) clearInterval(galleryInterval);
+            isPaused = false;
+            
+            galleryInterval = setInterval(() => {
+                const container = document.getElementById('photo-container');
+                const imgs = container.getElementsByClassName('photo-layer');
+                
+                if (imgs.length <= 1) return;
+
+                if(imgs[currentIndex]) imgs[currentIndex].classList.remove('visible');
+                currentIndex = (currentIndex + 1) % imgs.length;
+                
+                if(imgs[currentIndex]) {
+                    imgs[currentIndex].classList.add('visible');
+                }
+            }, currentSpeed);
+        };
+
+        window.goMain = function() {
+            if(galleryInterval) clearInterval(galleryInterval);
+            document.getElementById('gallery-screen').classList.remove('active');
+            document.getElementById('main-screen').style.opacity = '1';
+            document.getElementById('main-screen').style.pointerEvents = 'all';
+        };
+
+        window.startRandomGame = function() {
+            window.closeArchive();
+            const allImages = [
+                ...imgData.circle,
+                ...imgData.triangle,
+                ...imgData.square
+            ];
+            const randomImg = allImages[Math.floor(Math.random() * allImages.length)];
+            window.openDrawing(randomImg, "", 'extraction');
+        };
+
+        window.openDrawing = function(imageUrl, existingTitle = "", mode = 'extraction', rootUrl = "") {
+            if(galleryInterval) clearInterval(galleryInterval);
+            
+            currentDrawMode = mode;
+            window.currentRootUrl = rootUrl;
+
+            document.getElementById('drawing-screen').classList.add('show');
+            const bgImg = document.getElementById('drawing-bg');
+            bgImg.crossOrigin = "anonymous";
+            bgImg.decoding = "async";
+            bgImg.src = imageUrl;
+            
+            resizeCanvas();
+            const canvas = document.getElementById('drawing-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            window.drawingHistory = [];
+            saveState(); 
+
+            const defaultColor = '#000000';
+            document.getElementById('color-picker').value = defaultColor;
+
+            const titleInput = document.getElementById('drawing-title');
+            const titleWrapper = document.getElementById('title-container-wrapper');
+
+            if (mode === 'extraction') {
+                titleWrapper.style.display = 'none';
+                titleInput.value = ""; 
+            } else {
+                titleWrapper.style.display = 'flex';
+                titleInput.value = ""; 
+                titleInput.placeholder = existingTitle ? `Orig: ${existingTitle}` : "제목을 입력하세요";
+            }
+        };
+
+        window.closeDrawing = function() {
+            document.getElementById('drawing-screen').classList.remove('show');
+            // [수정] 갤러리 화면이 활성화된 상태라면(추출 모드) -> 갤러리 화면 유지 및 슬라이드 재개
+            if(document.getElementById('gallery-screen').classList.contains('active')) {
+                window.startSlideShow();
+            } else {
+                // 셰이프 게임 모드 등 다른 경우 -> 아카이브 열기 (혹은 메인으로 갈 수도 있음)
+                window.openArchive();
+            }
+        };
+
+        window.setTool = function(tool) {
+            window.currentTool = tool;
+            document.getElementById('btn-brush').classList.remove('active');
+            document.getElementById('btn-eraser').classList.remove('active');
+            if(tool === 'brush') document.getElementById('btn-brush').classList.add('active');
+            else document.getElementById('btn-eraser').classList.add('active');
+        };
+        
+        window.undo = function() {
+            const canvas = document.getElementById('drawing-canvas');
+            const ctx = canvas.getContext('2d');
+            if (window.drawingHistory.length === 0) { ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
+            const prevUrl = window.drawingHistory.pop();
+            const img = new Image();
+            img.src = prevUrl;
+            img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.globalCompositeOperation = 'source-over'; ctx.drawImage(img, 0, 0); if(window.currentTool === 'eraser') ctx.globalCompositeOperation = 'destination-out'; };
+        };
+
+        window.saveAndArchive = async function() {
+            if (!confirm("저장하시겠습니까?")) {
+                return;
+            }
+
+            let title = "";
+            if (currentDrawMode === 'shapegame') {
+                const titleInput = document.getElementById('drawing-title');
+                title = titleInput.value.trim();
+            }
+
+            const canvas = document.getElementById('drawing-canvas');
+            let finalDataUrl = "";
+            
+            if (currentDrawMode === 'shapegame') {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tCtx = tempCanvas.getContext('2d');
+                
+                const bgImg = document.getElementById('drawing-bg');
+                
+                const imgRatio = bgImg.naturalWidth / bgImg.naturalHeight;
+                const canvasRatio = canvas.width / canvas.height;
+                let drawW, drawH, drawX, drawY;
+
+                if (imgRatio > canvasRatio) {
+                    drawW = canvas.width;
+                    drawH = drawW / imgRatio;
+                    drawX = 0;
+                    drawY = (canvas.height - drawH) / 2;
+                } else {
+                    drawH = canvas.height;
+                    drawW = drawH * imgRatio;
+                    drawX = (canvas.width - drawW) / 2;
+                    drawY = 0;
+                }
+                
+                tCtx.drawImage(bgImg, drawX, drawY, drawW, drawH);
+                tCtx.drawImage(canvas, 0, 0);
+                
+                finalDataUrl = tempCanvas.toDataURL("image/png");
+            } else {
+                finalDataUrl = canvas.toDataURL("image/png");
+            }
+            
+            let finalOriginalUrl = "";
+            if (currentDrawMode === 'shapegame') {
+                finalOriginalUrl = window.currentRootUrl || document.getElementById('drawing-bg').src;
+            } else {
+                finalOriginalUrl = document.getElementById('drawing-bg').src;
+            }
+
+            try {
+                await window.addDoc(window.collection(window.db, "gazes"), { 
+                    imageUrl: finalDataUrl, 
+                    title: title, 
+                    originalBgUrl: finalOriginalUrl, 
+                    createdAt: Date.now() 
+                });
+
+                showToast("저장 완료");
+                window.closeDrawing(); 
+
+            } catch (e) {
+                console.error("Save Error: ", e);
+                alert("저장에 실패했습니다.");
+            }
+        };
+
+        function showToast(message) {
+            const toast = document.getElementById('toast-message');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        window.deleteGaze = async function(event, docId) {
+            event.stopPropagation();
+            if(confirm("정말로 이 기록을 삭제하시겠습니까?")) {
+                try {
+                    await window.deleteDoc(window.doc(window.db, "gazes", docId));
+                    alert("삭제되었습니다.");
+                    window.openArchive();
+                } catch(e) {
+                    console.error("Delete Error: ", e);
+                    alert("삭제에 실패했습니다.");
+                }
+            }
+        };
+
+        window.openViewModal = function(data) {
+            const modal = document.getElementById('view-modal');
+            const drawingLayer = document.getElementById('view-drawing-layer');
+            const backdropLayer = document.getElementById('view-backdrop-layer');
+            const titleEl = document.getElementById('view-title');
+            const dateEl = document.getElementById('view-date');
+            const originalBtn = document.getElementById('view-original-btn');
+
+            drawingLayer.src = data.imageUrl; 
+            titleEl.innerText = data.title ? data.title : '무제';
+            
+            const d = new Date(data.createdAt);
+            dateEl.innerText = d.getFullYear() + '.' + (d.getMonth()+1) + '.' + d.getDate();
+
+            if (data.originalBgUrl) {
+                originalBtn.style.display = 'flex';
+                backdropLayer.src = data.originalBgUrl; 
+                
+                let isOverlayActive = false;
+                
+                originalBtn.onclick = () => {
+                    isOverlayActive = !isOverlayActive;
+                    if (isOverlayActive) {
+                        backdropLayer.style.opacity = '0.5'; 
+                        originalBtn.classList.add('active');
+                    } else {
+                        backdropLayer.style.opacity = '0';
+                        originalBtn.classList.remove('active');
+                    }
+                };
+                
+                isOverlayActive = false;
+                backdropLayer.style.opacity = '0';
+                originalBtn.classList.remove('active');
+
+            } else {
+                originalBtn.style.display = 'none';
+                originalBtn.onclick = null;
+            }
+
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        };
+
+        window.closeView = function() {
+            const modal = document.getElementById('view-modal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+            window.openArchive();
+        };
+
+        window.openArchive = async function() {
+            const archiveScreen = document.getElementById('archive-screen');
+            const grid = document.getElementById('archive-grid');
+            
+            document.getElementById('main-screen').style.opacity = '0';
+            document.getElementById('main-screen').style.pointerEvents = 'none';
+            archiveScreen.classList.add('active');
+            
+            grid.innerHTML = '<div class="archive-loading">기록된 시선들을 불러옵니다...</div>';
+
+            try {
+                const q = window.query(window.collection(window.db, "gazes"), window.orderBy("createdAt", "desc"), window.limit(50));
+                const querySnapshot = await window.getDocs(q);
+                
+                grid.innerHTML = ''; 
+                if (querySnapshot.empty) { 
+                    grid.innerHTML = '<div style="color:#666; text-align:center;">아직 기록이 없습니다.<br>시선 담기 버튼을 눌러보세요!</div>'; 
+                    return; 
+                }
+
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const docId = docSnap.id;
+                    
+                    const hasTitle = data.title && data.title.trim() !== "";
+
+                    const item = document.createElement('div');
+                    item.className = 'archive-item';
+                    
+                    if (!hasTitle) item.classList.add('playable');
+                    
+                    item.onclick = () => {
+                        document.getElementById('archive-screen').classList.remove('active');
+                        
+                        if (hasTitle) {
+                            window.openViewModal(data);
+                        } else {
+                            setTimeout(() => {
+                                window.openDrawing(data.imageUrl, "", 'shapegame', data.originalBgUrl); 
+                            }, 300);
+                        }
+                    };
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.innerHTML = '×';
+                    deleteBtn.onclick = (e) => window.deleteGaze(e, docId);
+                    item.appendChild(deleteBtn);
+
+                    const imgWrapper = document.createElement('div');
+                    imgWrapper.className = 'archive-img-wrapper';
+                    const img = document.createElement('img');
+                    img.src = data.imageUrl;
+                    img.className = 'archive-img';
+                    imgWrapper.appendChild(img);
+
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'archive-item-title';
+                    
+                    titleDiv.innerText = hasTitle ? data.title : '이어그리기';
+                    
+                    item.appendChild(imgWrapper);
+                    item.appendChild(titleDiv);
+                    grid.appendChild(item);
+                });
+
+            } catch (e) { 
+                console.error("Error getting documents: ", e); 
+                grid.innerHTML = '<div style="color:red; text-align:center;">데이터 로드 실패</div>'; 
+            }
+        };
+        
+        window.closeArchive = function() {
+            document.getElementById('archive-screen').classList.remove('active');
+            document.getElementById('main-screen').style.opacity = '1';
+            document.getElementById('main-screen').style.pointerEvents = 'all';
+        };
+
+        const speedSlider = document.getElementById('speed-slider');
+        currentSpeed = 10000 - parseInt(speedSlider.value); 
+
+        speedSlider.addEventListener('input', function(e) {
+            currentSpeed = 10000 - parseInt(e.target.value);
+            if(document.getElementById('gallery-screen').classList.contains('active') && !isPaused) {
+                window.startSlideShow();
+            }
+        });
+
+        const canvas = document.getElementById('drawing-canvas');
+        const ctx = canvas.getContext('2d');
+        window.isDrawing = false;
+        window.drawingHistory = [];
+        window.currentTool = 'brush';
+        
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas);
+        
+        function startDraw(e) { if (e.type !== 'mousedown') return; saveState(); window.isDrawing = true; ctx.beginPath(); ctx.moveTo(e.clientX, e.clientY); }
+        function draw(e) { if (!window.isDrawing) return; const color = document.getElementById('color-picker').value; const size = document.getElementById('brush-size').value; ctx.lineWidth = size; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; if (window.currentTool === 'eraser') { ctx.globalCompositeOperation = 'destination-out'; ctx.strokeStyle = 'rgba(0,0,0,1)'; } else { ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = color; } ctx.lineTo(e.clientX, e.clientY); ctx.stroke(); }
+        function stopDraw() { if (window.isDrawing) { window.isDrawing = false; ctx.closePath(); } }
+        function saveState() { if(window.drawingHistory.length > 20) window.drawingHistory.shift(); window.drawingHistory.push(canvas.toDataURL()); }
+        
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseleave', stopDraw);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); const touch = e.touches[0]; const mouseEvent = new MouseEvent("mousedown", { clientX: touch.clientX, clientY: touch.clientY }); canvas.dispatchEvent(mouseEvent); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); const touch = e.touches[0]; const mouseEvent = new MouseEvent("mousemove", { clientX: touch.clientX, clientY: touch.clientY }); canvas.dispatchEvent(mouseEvent); }, {passive: false});
+        canvas.addEventListener('touchend', () => { const mouseEvent = new MouseEvent("mouseup", {}); canvas.dispatchEvent(mouseEvent); });
+        
+        document.addEventListener('keydown', function(e) {
+            if (!document.getElementById('drawing-screen').classList.contains('show')) return;
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); window.undo(); }
+        });
+    </script>
+</body>
+</html>
